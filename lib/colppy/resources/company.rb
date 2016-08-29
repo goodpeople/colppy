@@ -23,9 +23,10 @@ module Colppy
           parameters.merge(client.session_params)
         )
         if response[:success]
-          response[:data].map do |params|
+          results = response[:data].map do |params|
             new(params.merge(client: client))
           end
+          parse_list_response(results, response[:total].to_i, parameters)
         else
           response
         end
@@ -39,10 +40,19 @@ module Colppy
       @extras = params
     end
 
-    def customers
+    def customers(params = {})
+      ensure_client_valid!
+      if params.empty?
+        Customer.all(@client, self)
+      else
+        Customer.list(@client, self, params)
+      end
+    end
+
+    def customer(id)
       ensure_client_valid!
 
-      Customer.all(@client, self)
+      Customer.get(@client, self, id)
     end
 
     def params
@@ -55,12 +65,5 @@ module Colppy
       [:id, :name]
     end
 
-    def ensure_client_valid!
-      unless @client && @client.is_a?(Colppy::Client)
-        raise ResourceError.new(
-          "You should provide a client, and it should be a Colppy::Client instance"
-        )
-      end
-    end
   end
 end
