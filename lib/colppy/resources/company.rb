@@ -42,6 +42,7 @@ module Colppy
 
     def customers(params = {})
       ensure_client_valid!
+
       if params.empty?
         Customer.all(@client, self)
       else
@@ -75,6 +76,16 @@ module Colppy
       }
       response = Product.list(@client, self, params)
       response[:results].last
+    end
+
+    def sell_invoices(params = {})
+      ensure_client_valid!
+
+      if params.empty?
+        SellInvoice.all(@client, self)
+      else
+        SellInvoice.list(@client, self, params)
+      end
     end
 
     def params

@@ -1,6 +1,6 @@
 module Colppy
-  class Product < Resource
-    attr_reader :id, :name, :sku, :data
+  class SellInvoice < Resource
+    attr_reader :id, :number, :data
 
     class << self
       def all(client, company)
@@ -10,7 +10,7 @@ module Colppy
       def list(client, company, parameters = {})
         call_parameters = base_params.merge(parameters)
         response = client.call(
-          :product,
+          :sell_invoice,
           :list,
           extended_parameters(client, company, call_parameters)
         )
@@ -36,10 +36,10 @@ module Colppy
       def base_params
         {
           filter:[],
-          order: [{
-            field: "codigo",
-            dir: "asc"
-          }]
+          order: {
+            field: ["nroFactura"],
+            order: "desc"
+          }
         }
       end
 
@@ -48,9 +48,8 @@ module Colppy
     def initialize(client: nil, company: nil, **params)
       @client = client if client && client.is_a?(Colppy::Client)
       @company = company if company && company.is_a?(Colppy::Company)
-      @id = params.delete(:idItem)
-      @name = params.delete(:descripcion)
-      @sku = params.delete(:codigo)
+      @id = params.delete(:idFactura)
+      @number = params.delete(:nroFactura)
       @data = params
     end
 
@@ -61,29 +60,17 @@ module Colppy
     def save
       ensure_client_valid! && ensure_company_valid!
 
-      response = @client.call(
-        :product,
-        operation,
-        save_parameters
-      )
-      if response[:success]
-        response_data = response[:data]
-        case operation
-        when :create
-          @id = response_data[:idItem]
-        end
-        self
-      else
+      # response = @client.call(
+      #   :sell_invoice,
+      #   :create,
+      #   save_parameters
+      # )
+      # if response[:success]
+      #   @id = response[:data][:idFactura]
+      #   self
+      # else
         false
-      end
-    end
-
-    def name=(new_name)
-      @name = new_name
-    end
-
-    def sku=(new_sku)
-      @sku = new_sku
+      # end
     end
 
     def []=(key, value)
@@ -97,15 +84,11 @@ module Colppy
     private
 
     def attr_inspect
-      [:id, :sku, :name]
+      [:id, :number]
     end
 
     def protected_data_keys
-      [:idItem, :idEmpresa]
-    end
-
-    def operation
-      new? ? :create : :update
+      [:idFactura, :idEmpresa, :nroFactura]
     end
 
     def save_parameters
@@ -117,20 +100,7 @@ module Colppy
 
     def params
       {
-        idItem: id || "",
-        idEmpresa: @company.id,
-        codigo: sku || "",
-        descripcion: name || "",
-        detalle: @data[:detalle] || "",
-        precioVenta: @data[:precioVenta] || "0",
-        ultimoPrecioCompra: @data[:minimo] || "0",
-        ctaInventario: @data[:ctaInventario] || "",
-        ctaCostoVentas: @data[:ctaCostoVentas] || "",
-        ctaIngresoVentas: @data[:ctaIngresoVentas] || "",
-        iva: @data[:iva] || "21",
-        tipoItem: @data[:tipoItem] || "P",
-        unidadMedida: @data[:unidadMedida] || "P",
-        minimo: @data[:minimo] || "0"
+
       }
     end
   end

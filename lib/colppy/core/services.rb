@@ -43,6 +43,20 @@ module Colppy
           operacion: "editar_iteminventario"
         }
       },
+      sell_invoice: {
+        list: {
+          provision: "FacturaVenta",
+          operacion: "listar_facturasventa"
+        },
+        read: {
+          provision: "FacturaVenta",
+          operacion: "leer_facturaventa"
+        },
+        create: {
+          provision: "FacturaVenta",
+          operacion: "alta_facturaventa"
+        }
+      },
       user: {
         sign_in: {
           provision: "Usuario",
