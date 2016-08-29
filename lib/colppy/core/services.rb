@@ -1,16 +1,6 @@
 module Colppy
   module Core
     SERVICES = {
-      user: {
-        sign_in: {
-          provision: "Usuario",
-          operacion: "iniciar_sesion"
-        },
-        sign_out: {
-          provision: "Usuario",
-          operacion: "cerrar_sesion"
-        }
-      },
       company: {
         list: {
           provision: "Empresa",
@@ -37,6 +27,30 @@ module Colppy
         update: {
           provision: "Cliente",
           operacion: "editar_cliente"
+        }
+      },
+      product: {
+        list: {
+          provision: "Inventario",
+          operacion: "listar_itemsinventario"
+        },
+        create: {
+          provision: "Inventario",
+          operacion: "alta_iteminventario"
+        },
+        update: {
+          provision: "Inventario",
+          operacion: "editar_iteminventario"
+        }
+      },
+      user: {
+        sign_in: {
+          provision: "Usuario",
+          operacion: "iniciar_sesion"
+        },
+        sign_out: {
+          provision: "Usuario",
+          operacion: "cerrar_sesion"
         }
       }
     }.freeze

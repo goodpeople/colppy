@@ -12,6 +12,7 @@ require "colppy/core/gateway"
 require "colppy/resource"
 require "colppy/resources/customer"
 require "colppy/resources/company"
+require "colppy/resources/product"
 require "colppy/resources/user"
 # CLIENT
 require "colppy/errors"

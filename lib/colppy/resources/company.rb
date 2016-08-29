@@ -49,10 +49,32 @@ module Colppy
       end
     end
 
-    def customer(id)
+    def customer_by_id(id)
       ensure_client_valid!
 
       Customer.get(@client, self, id)
+    end
+
+    def products(params = {})
+      ensure_client_valid!
+
+      if params.empty?
+        Product.all(@client, self)
+      else
+        Product.list(@client, self, params)
+      end
+    end
+
+    def product_by_sku(sku)
+      ensure_client_valid!
+
+      params = {
+        filter: [
+          { field: "codigo", op: "=", value: sku }
+        ]
+      }
+      response = Product.list(@client, self, params)
+      response[:results].last
     end
 
     def params

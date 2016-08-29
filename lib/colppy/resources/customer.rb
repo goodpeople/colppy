@@ -72,19 +72,19 @@ module Colppy
 
     def save
       ensure_client_valid! && ensure_company_valid!
-      binding.pry
+
       response = @client.call(
         :customer,
         operation,
         save_parameters
       )
       if response[:success]
-        data = response[:data]
+        response_data = response[:data]
         case operation
         when :create
-          @id = data[:idCliente]
+          @id = response_data[:idCliente]
         when :update
-          @data[:NombreFantasia] = data[:nombreCliente]
+          @data[:NombreFantasia] = response_data[:nombreCliente]
         end
         self
       else
@@ -155,7 +155,7 @@ module Colppy
         DirFiscalPais: @data[:DirFiscalPais] || "",
         idCondicionPago: @data[:idCondicionPago] || "",
         idCondicionIva: @data[:idCondicionIva] || "",
-        porcentajeIVA: @data[:porcentajeIVA] || "",
+        porcentajeIVA: @data[:porcentajeIVA] || "21",
         idPlanCuenta: @data[:idPlanCuenta] || "",
         CuentaCredito: @data[:CuentaCredito] || "",
         DirEnvio: @data[:DirEnvio] || "",
