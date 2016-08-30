@@ -1,3 +1,6 @@
+#Colppy
+[![Build Status](https://travis-ci.org/goodpeople/colppy.svg?branch=master)](https://travis-ci.org/goodpeople/colppy)
+
 ## Installation
 
 Add this line to your application's Gemfile:
