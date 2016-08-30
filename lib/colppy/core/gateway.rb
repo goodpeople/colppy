@@ -34,7 +34,7 @@ module Colppy
         }
       end
 
-      def make_request(payload = {})
+      def make_request(payload)
         unless payload.empty?
           payload = MultiJson.dump(payload)
         end

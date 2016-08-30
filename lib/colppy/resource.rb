@@ -1,6 +1,5 @@
 module Colppy
   class Resource
-    include Utils
     VALID_INVOICE_TYPES = %w(A B C E Z I M X)
 
     class << self

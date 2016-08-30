@@ -16,7 +16,8 @@ rescue LoadError
   end
 end
 
-task default: [:test, :rubocop]
+# task default: [:test, :rubocop]
+task default: [:test]
 
 task :console do
   require "pry"
