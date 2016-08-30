@@ -1,6 +1,7 @@
 module Colppy
   class Resource
     include Utils
+    VALID_INVOICE_TYPES = %w(A B C E Z I M X)
 
     class << self
       protected
@@ -40,6 +41,21 @@ module Colppy
     def attr_inspect
     end
 
+    def valid_date(date_string)
+      return today_date_string if date_string.nil? || date_string.empty?
+
+      parsed_date = Date.parse(date_string)
+      if parsed_date <= Date.today
+        date_string
+      else
+        today_date_string
+      end
+    end
+
+    def today_date_string
+      Date.today.strftime("%d-%m-%Y")
+    end
+
     def ensure_client_valid!
       unless @client && @client.is_a?(Colppy::Client)
         raise ResourceError.new(
@@ -52,6 +68,14 @@ module Colppy
       unless @company && @company.is_a?(Colppy::Company)
         raise ResourceError.new(
           "You should provide a company, and it should be a Colppy::Company instance"
+        )
+      end
+    end
+
+    def ensure_customer_valid!
+      unless @customer && @customer.is_a?(Colppy::Customer)
+        raise ResourceError.new(
+          "You should provide a customer, and it should be a Colppy::Customer instance"
         )
       end
     end

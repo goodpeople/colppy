@@ -94,6 +94,21 @@ module Colppy
       @data[key_sym] = value
     end
 
+    def params_for_invoice
+      {
+        idItem: id || "",
+        minimo: @data[:minimo] || "0",
+        codigo: sku || "",
+        tipoItem: @data[:tipoItem] || "P",
+        unidadMedida: @data[:unidadMedida] || "u",
+        Descripcion: name || "",
+        ImporteUnitario: @data[:precioVenta],
+        IVA: @data[:iva] || "21",
+        Comentario: @data[:detalle] || "",
+        idPlanCuenta: @data[:ctaIngresoVentas]
+      }
+    end
+
     private
 
     def attr_inspect
@@ -129,7 +144,7 @@ module Colppy
         ctaIngresoVentas: @data[:ctaIngresoVentas] || "",
         iva: @data[:iva] || "21",
         tipoItem: @data[:tipoItem] || "P",
-        unidadMedida: @data[:unidadMedida] || "P",
+        unidadMedida: @data[:unidadMedida] || "u",
         minimo: @data[:minimo] || "0"
       }
     end

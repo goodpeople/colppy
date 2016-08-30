@@ -65,6 +65,7 @@ module Colppy
         Product.list(@client, self, params)
       end
     end
+    alias :customer :customer_by_id
 
     def product_by_sku(sku)
       ensure_client_valid!
@@ -78,6 +79,19 @@ module Colppy
       response[:results].last
     end
 
+    def product_by_id(id)
+      ensure_client_valid!
+
+      params = {
+        filter: [
+          { field: "idItem", op: "=", value: id }
+        ]
+      }
+      response = Product.list(@client, self, params)
+      response[:results].last
+    end
+    alias :product :product_by_id
+
     def sell_invoices(params = {})
       ensure_client_valid!
 
@@ -87,6 +101,13 @@ module Colppy
         SellInvoice.list(@client, self, params)
       end
     end
+
+    def sell_invoice_by_id(id)
+      ensure_client_valid!
+
+      SellInvoice.get(@client, self, id)
+    end
+    alias :sell_invoice :sell_invoice_by_id
 
     def params
       { idEmpresa: @id }
