@@ -176,11 +176,11 @@ module Colppy
         ccosto2: unhandle_data[:ccosto2] || "",
         almacen: unhandle_data[:almacen] || "",
         unidadMedida: measure_unit,
-        Cantidad: quantity.to_s,
-        ImporteUnitario: charged.to_s,
-        porcDesc: unhandle_data[:porcDesc] || "0.0",
+        Cantidad: quantity,
+        ImporteUnitario: charged,
+        porcDesc: unhandle_data[:porcDesc] || 0,
         IVA: tax.to_s,
-        subtotal: total_charged.to_s,
+        subtotal: total_charged,
         idPlanCuenta: sales_account_id,
         Comentario: comment
       }
@@ -282,8 +282,8 @@ module Colppy
     def save_parameters
       {
         alicuotaIva: tax_name,
-        importeIva: @data[:tax_amount].to_s,
-        baseImpIva: @data[:taxed_amount].to_s
+        importeIva: @data[:tax_amount],
+        baseImpIva: @data[:taxed_amount]
       }
     end
 

@@ -231,26 +231,32 @@ module Colppy
       {
         idCliente: customer_id,
         idEmpresa: company_id,
+        idUsuario: @client.username,
         descripcion: @data[:descripcion] || "",
         fechaFactura: valid_date(@data[:fechaFactura]),
         idCondicionPago: payment_condition_id,
         fechaPago: valid_date(@data[:fechaPago]),
         idEstadoAnterior: previous_status_id,
         idEstadoFactura: status_id,
+        idFactura: @id || "",
         idMoneda: @data[:currency_id] || "1",
         idTipoComprobante: receipt_type_id,
         idTipoFactura: invoice_type_id,
-        netoGravado: (charged_amounts[:total_taxed] || 0.00).to_s,
-        netoNoGravado: (charged_amounts[:total_non_taxed] || 0.00).to_s,
+        netoGravado: charged_amounts[:total_taxed] || 0.00,
+        netoNoGravado: charged_amounts[:total_non_taxed] || 0.00,
         nroFactura1: @data[:invoice_number1] || "0001",
         nroFactura2: @data[:invoice_number2] || "00000000",
-        percepcionIVA: (@data[:tax_perception] || 0.00).to_s,
-        percepcionIIBB: (@data[:iibb_perception] || 0.00).to_s,
-        totalFactura: (charged_amounts[:total] || 0.00).to_s,
-        totalIVA: (charged_amounts[:tax_total] || 0.00).to_s,
+        percepcionIVA: @data[:tax_perception] || 0.00,
+        percepcionIIBB: @data[:iibb_perception] || 0.00,
+        totalFactura: charged_amounts[:total] || 0.00,
+        totalIVA: charged_amounts[:tax_total] || 0.00,
         valorCambio: @data[:exchange_rate] || "1",
+        nroRepeticion: @data[:repetition_number] || "1",
+        periodoRep: @data[:repetition_period] || "1",
+        nroVencimiento: @data[:expiration_number] || "0",
+        tipoVencimiento: @data[:expiration_type] || "1",
+        fechaFin: @data[:end_date] || ""
       }.tap do |params|
-        params[:idFactura] = @id if @id
         params[:tipoFactura] = invoice_type if invoice_type
         if status_id == "Cobrada"
           params[:totalpagadofactura] = @payments.map(&:amount).inject(0,:+)
