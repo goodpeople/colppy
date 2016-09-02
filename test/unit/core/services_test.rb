@@ -7,7 +7,7 @@ class Colppy::Core::ServicesTest < Minitest::Test
   end
 
   def test_defined_services
-    assert_equal [:company, :customer, :product, :sell_invoice, :user], @services.keys
+    assert_equal [:company, :customer, :inventory, :product, :sell_invoice, :user], @services.keys
   end
 
   def test_company_operations
