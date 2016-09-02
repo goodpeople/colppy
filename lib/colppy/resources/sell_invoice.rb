@@ -115,7 +115,6 @@ module Colppy
       @taxes_totals = parse_taxes_totals(params.delete(:totalesiva))
 
       super(params)
-      @url = build_pdf_url
     end
     DATA_KEYS_SETTERS.each do |data_key|
       define_method("#{data_key}=") do |value|
@@ -129,6 +128,16 @@ module Colppy
 
     def editable?
       cae.nil? || cae.empty?
+    end
+
+    def url
+      return if @data[:url].nil? || @data[:url].empty?
+
+      "#{@data[:url]}?usuario=#{@client.username}&claveSesion=#{@client.session_key}&idEmpresa=#{company_id}&idFactura=#{id}&idCliente=#{customer_id}"
+    end
+
+    def total_charged
+      @items.map(&:total_charged).inject(0,:+)
     end
 
     def []=(key, value)
@@ -151,9 +160,12 @@ module Colppy
         :create,
         save_parameters
       )
-      binding.pry
       if response[:success]
-        @id = response[:data][:idFactura]
+        @cae = response[:cae]
+        @id = response[:idfactura]
+        @number = response[:nroFactura]
+        @data[:invoice_date] = response[:fechaFactura]
+        @data[:url] = response[:UrlFacturaPdf]
         self
       else
         false
@@ -210,12 +222,6 @@ module Colppy
       end
     end
 
-    def build_pdf_url
-      return if data[:url].nil? || data[:url].empty?
-
-      data[:url] = "#{data[:url]}?usuario=#{@client.username}&claveSesion=#{@client.session_key}&idEmpresa=#{@company.id}&idFactura=#{id}&idCliente=#{data[:idCliente]}"
-    end
-
     def save_parameters
       charged_amounts = calculate_charged_amounts
       [
@@ -233,9 +239,9 @@ module Colppy
         idEmpresa: company_id,
         idUsuario: @client.username,
         descripcion: @data[:descripcion] || "",
-        fechaFactura: valid_date(@data[:fechaFactura]),
+        fechaFactura: valid_date(@data[:invoice_date]),
         idCondicionPago: payment_condition_id,
-        fechaPago: valid_date(@data[:fechaPago]),
+        fechaPago: valid_date(@data[:payment_date]),
         idEstadoAnterior: previous_status_id,
         idEstadoFactura: status_id,
         idFactura: @id || "",
@@ -273,8 +279,11 @@ module Colppy
           tax = item.tax
           total = item.total_charged
           if tax > 0
-            item_tax_amount = (( total * tax ) / 100).round(2)
-            item_taxed_amount = total - item_tax_amount
+            dividend = tax.to_f
+            divisor = (100.0 + dividend).to_f
+
+            item_tax_amount = (( total * dividend ) / divisor).round(2)
+            item_taxed_amount = (total - item_tax_amount).round(2)
             result[:tax_total] += item_tax_amount
             result[:total_taxed] += item_taxed_amount
             tax_breakdown_data = TaxTotal.add_to_tax_breakdown(

@@ -1,12 +1,7 @@
 module Colppy
   class Invoice < Resource
     VALID_PAYMENT_CONDITIONS = ["Contado", "a 15 Dias", "a 30 Dias", "a 60 Dias"]
-    VALID_STATUS_ID = [
-      "Borrador",
-      "Aprobada",
-      "Anulada",
-      "Cobrada"
-    ]
+    VALID_STATUS_ID = [ "Borrador", "Aprobada", "Anulada", "Cobrada" ]
     VALID_INVOICE_TYPES = %w(A B C E Z I M X)
 
     def add_item(params)
@@ -290,66 +285,3 @@ module Colppy
     def inspect; end
   end
 end
-
-
-
-    # def invoice_items_params
-    #   items.map do |item|
-    #     if item[:product] && item[:product].is_a?(Colppy::Product)
-    #       product = item[:product]
-    #       [
-    #         product.params_for_invoice,
-    #         item_params(item, false)
-    #       ].inject(&:merge)
-    #     elsif item.is_a?(Hash)
-    #       item_params(item)
-    #     end
-    #   end
-    # end
-
-    # def item_params(item, fill_empty = true)
-    #   {
-    #     Cantidad: item[:Cantidad],
-    #     porcDesc: item[:porcDesc] || "0.00"
-    #   }.tap do |params|
-    #     if value = item[:ImporteUnitario] || fill_empty
-    #       params[:ImporteUnitario] = value || ""
-    #     end
-    #     if value = item[:idPlanCuenta] || fill_empty
-    #       params[:idPlanCuenta] = value || ""
-    #     end
-    #     if value = item[:IVA] || fill_empty
-    #       params[:IVA] = value || "21"
-    #     end
-    #     if value = item[:Comentario] || fill_empty
-    #       params[:Comentario] = value || ""
-    #     end
-    #   end
-    # end
-
-
-    # def invoice_payments_params
-    #   return {} unless payments
-    #   payment_items = payments.map do |payment|
-    #     {
-    #       idMedioCobro: payment[:idMedioCobro] || "Efectivo",
-    #       idPlanCuenta: payment[:idPlanCuenta] || "Caja en pesos",
-    #       Banco: payment[:Banco] || "",
-    #       nroCheque: payment[:nroCheque] || "",
-    #       fechaValidez: payment[:fechaValidez] || "",
-    #       importe: payment[:importe] || "0",
-    #       VAD: payment[:VAD] || "S"
-    #     }
-    #   end
-    #   { ItemsCobro: payment_items }
-    # end
-
-    # def total_taxes_params
-    #   charged_details[:tax_details].map do |tax, values|
-    #     {
-    #       alicuotaIva: tax.to_s,
-    #       baseImpIva: values[:total_taxed].to_s,
-    #       importeIva: values[:tax_total].to_s
-    #     }
-    #   end
-    # end

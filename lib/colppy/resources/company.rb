@@ -57,12 +57,12 @@ module Colppy
         Customer.list(@client, self, params)
       end
     end
-
     def customer_by_id(id)
       ensure_client_valid!
 
       Customer.get(@client, self, id)
     end
+    alias :customer :customer_by_id
 
     def products(params = {})
       ensure_client_valid!
@@ -73,8 +73,6 @@ module Colppy
         Product.list(@client, self, params)
       end
     end
-    alias :customer :customer_by_id
-
     def product_by_code(code)
       ensure_client_valid!
 
@@ -86,7 +84,6 @@ module Colppy
       response = Product.list(@client, self, params)
       response[:results].last
     end
-
     def product_by_id(id)
       ensure_client_valid!
 
@@ -109,13 +106,39 @@ module Colppy
         SellInvoice.list(@client, self, params)
       end
     end
-
     def sell_invoice_by_id(id)
       ensure_client_valid!
 
       SellInvoice.get(@client, self, id)
     end
     alias :sell_invoice :sell_invoice_by_id
+
+    def available_accounts
+      return @available_accounts unless @available_accounts.nil? || @available_accounts.empty?
+
+      response = @client.call(
+        :inventory,
+        :accounts_list,
+        params.merge(@client.session_params)
+      )
+      if response[:success]
+        @available_accounts = response[:cuentas].map do |account|
+          {
+            id: account[:Id],
+            account_id: account[:idPlanCuenta],
+            full_name: account[:Descripcion],
+            name: account[:Descripcion].split(' - ')[1]
+          }
+        end
+      end
+    end
+    def account_name(account_id)
+      return if available_accounts.nil? || available_accounts.empty?
+
+      if account = available_accounts.detect{ |a| a[:account_id].to_s == account_id.to_s }
+        account[:name]
+      end
+    end
 
     def params
       { idEmpresa: @id }

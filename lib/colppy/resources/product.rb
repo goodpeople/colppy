@@ -120,18 +120,8 @@ module Colppy
       end
     end
 
-    def params_for_invoice
-      {
-        idItem: @id || "",
-        codigo: @code || "",
-        Descripcion: @name || "",
-        ImporteUnitario: @data[:sell_price],
-        IVA: @data[:tax] || "21",
-        Comentario: @data[:detail] || "",
-        idPlanCuenta: check_mandatory_account!(:sales_account),
-        unidadMedida: @data[:measure_unit] || "u",
-        tipoItem: @data[:item_type] || "P"
-      }
+    def sales_account
+      check_mandatory_account!(:sales_account)
     end
 
     private
@@ -171,8 +161,13 @@ module Colppy
     end
 
     def check_mandatory_account!(account)
-      if account_name = @data[account]
-        account_name
+      if account_name_or_id = @data[account]
+        real_account_name = @company.account_name(account_name_or_id)
+        if real_account_name
+          real_account_name
+        else
+          account_name_or_id
+        end
       else
         raise DataError.new("The :#{account} is required for the product. You should specify one via product.#{account} = '', or product[:#{account}] = '', or when you initialize it. You should check the available and valid accounts in Colppy")
       end

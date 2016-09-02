@@ -29,6 +29,12 @@ module Colppy
           operacion: "editar_cliente"
         }
       },
+      inventory: {
+        accounts_list: {
+          provision: "Inventario",
+          operacion: "listar_cuentasAsentables"
+        }
+      },
       product: {
         list: {
           provision: "Inventario",
