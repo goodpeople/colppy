@@ -1,6 +1,26 @@
 module Colppy
   class Product < Resource
-    attr_reader :id, :name, :sku, :data
+    attr_reader :id, :name, :code
+
+    ATTRIBUTES_MAPPER = {
+      idItem: :id,
+      idEmpresa: :company_id,
+      codigo: :code,
+      descripcion: :name,
+      detalle: :detail,
+      precioVenta: :sell_price,
+      ultimoPrecioCompra: :last_purchase_price,
+      ctaInventario: :inventory_account,
+      ctaCostoVentas: :sales_costs_account,
+      ctaIngresoVentas: :sales_account,
+      iva: :tax,
+      tipoItem: :item_type,
+      unidadMedida: :measure_unit,
+      minimo: :minimum_stock,
+      disponibilidad: :availability
+    }.freeze
+    PROTECTED_DATA_KEYS = [:id, :company_id, :name, :code].freeze
+    DATA_KEYS_SETTERS = (ATTRIBUTES_MAPPER.values - PROTECTED_DATA_KEYS).freeze
 
     class << self
       def all(client, company)
@@ -48,14 +68,36 @@ module Colppy
     def initialize(client: nil, company: nil, **params)
       @client = client if client && client.is_a?(Colppy::Client)
       @company = company if company && company.is_a?(Colppy::Company)
-      @id = params.delete(:idItem)
-      @name = params.delete(:descripcion)
-      @sku = params.delete(:codigo)
-      @data = params
+
+      @id = params.delete(:idItem) || params.delete(:id)
+      @name = params.delete(:descripcion) || params.delete(:name)
+      @code = params.delete(:codigo) || params.delete(:code)
+
+      super(params)
+    end
+    DATA_KEYS_SETTERS.each do |data_key|
+      define_method("#{data_key}") do
+        @data[data_key.to_sym]
+      end
+      define_method("#{data_key}=") do |value|
+        @data[data_key.to_sym] = value
+      end
     end
 
     def new?
-      id.nil? || id.empty?
+      @id.nil? || @id.empty?
+    end
+
+    def exist?
+      !new?
+    end
+
+    def name=(value)
+      @name = value
+    end
+
+    def code=(value)
+      @code = value
     end
 
     def save
@@ -78,45 +120,24 @@ module Colppy
       end
     end
 
-    def name=(new_name)
-      @name = new_name
-    end
-
-    def sku=(new_sku)
-      @sku = new_sku
-    end
-
-    def []=(key, value)
-      key_sym = key.to_sym
-      if protected_data_keys.include?(key_sym)
-        raise ResourceError.new("You cannot change any of this values: #{protected_data_keys.join(", ")} manually")
-      end
-      @data[key_sym] = value
-    end
-
     def params_for_invoice
       {
-        idItem: id || "",
-        minimo: @data[:minimo] || "0",
-        codigo: sku || "",
-        tipoItem: @data[:tipoItem] || "P",
-        unidadMedida: @data[:unidadMedida] || "u",
-        Descripcion: name || "",
-        ImporteUnitario: @data[:precioVenta],
-        IVA: @data[:iva] || "21",
-        Comentario: @data[:detalle] || "",
-        idPlanCuenta: @data[:ctaIngresoVentas]
+        idItem: @id || "",
+        codigo: @code || "",
+        Descripcion: @name || "",
+        ImporteUnitario: @data[:sell_price],
+        IVA: @data[:tax] || "21",
+        Comentario: @data[:detail] || "",
+        idPlanCuenta: check_mandatory_account!(:sales_account),
+        unidadMedida: @data[:measure_unit] || "u",
+        tipoItem: @data[:item_type] || "P"
       }
     end
 
     private
 
     def attr_inspect
-      [:id, :sku, :name]
-    end
-
-    def protected_data_keys
-      [:idItem, :idEmpresa]
+      [:id, :code, :name]
     end
 
     def operation
@@ -132,21 +153,29 @@ module Colppy
 
     def params
       {
-        idItem: id || "",
+        idItem: @id || "",
         idEmpresa: @company.id,
-        codigo: sku || "",
-        descripcion: name || "",
-        detalle: @data[:detalle] || "",
-        precioVenta: @data[:precioVenta] || "0",
-        ultimoPrecioCompra: @data[:minimo] || "0",
-        ctaInventario: @data[:ctaInventario] || "",
-        ctaCostoVentas: @data[:ctaCostoVentas] || "",
-        ctaIngresoVentas: @data[:ctaIngresoVentas] || "",
-        iva: @data[:iva] || "21",
-        tipoItem: @data[:tipoItem] || "P",
-        unidadMedida: @data[:unidadMedida] || "u",
-        minimo: @data[:minimo] || "0"
+        codigo: @code || "",
+        descripcion: @name || "",
+        detalle: @data[:detail] || "",
+        precioVenta: @data[:sell_price] || "0",
+        ultimoPrecioCompra: @data[:last_purchase_price] || "",
+        ctaInventario: check_mandatory_account!(:inventory_account),
+        ctaCostoVentas: check_mandatory_account!(:sales_costs_account),
+        ctaIngresoVentas: check_mandatory_account!(:sales_account),
+        iva: @data[:tax] || "21",
+        tipoItem: @data[:item_type] || "P",
+        unidadMedida: @data[:measure_unit] || "u",
+        minimo: @data[:minimum_stock] || "0"
       }
+    end
+
+    def check_mandatory_account!(account)
+      if account_name = @data[account]
+        account_name
+      else
+        raise DataError.new("The :#{account} is required for the product. You should specify one via product.#{account} = '', or product[:#{account}] = '', or when you initialize it. You should check the available and valid accounts in Colppy")
+      end
     end
   end
 end

@@ -1,9 +1,41 @@
 module Colppy
-  class SellInvoice < Resource
-    attr_reader :id, :number, :cae, :items, :data, :url
-    attr_accessor :payments
+  class SellInvoice < Invoice
+    attr_reader :id, :number, :cae, :url, :items
 
     VALID_RECEIPT_TYPES = %w(4 6 8 NCV)
+    ATTRIBUTES_MAPPER = {
+      descripcion: :description,
+      fechaFactura: :invoice_date,
+      idCondicionPago: :payment_condition_id, # validate
+      fechaPago: :payment_date,
+      idEmpresa: :company_id,
+      idCliente: :customer_id,
+      idEstadoAnterior: :previous_status_id, # validate
+      idEstadoFactura: :status_id, # validate
+      idMoneda: :currency_id,
+      idTipoComprobante: :receipt_type_id, # validate
+      idTipoFactura: :invoice_type_id, # validate
+      idUsuario: :user_id,
+      labelfe: :electronic_bill,
+      netoGravado: :total_taxed,
+      netoNoGravado: :total_nontaxed,
+      nroFactura1: :invoice_number1,
+      nroFactura2: :invoice_number2,
+      percepcionIIBB: :iibb_perception,
+      percepcionIVA: :tax_perception,
+      tipoFactura: :invoice_type, # validate
+      totalFactura: :total,
+      totalIVA: :total_taxes,
+      totalpagadofactura: :total_payed,
+      valorCambio: :exchange_rate,
+      nroRepeticion: :repetition_number,
+      periodoRep: :repetition_period,
+      nroVencimiento: :expiration_number,
+      tipoVencimiento: :expiration_type,
+      fechaFin: :end_date
+    }.freeze
+    PROTECTED_DATA_KEYS = [:id, :company_id, :customer_id, :number, :cae].freeze
+    DATA_KEYS_SETTERS = (ATTRIBUTES_MAPPER.values - PROTECTED_DATA_KEYS).freeze
 
     class << self
       def all(client, company)
@@ -61,13 +93,12 @@ module Colppy
 
       def extended_response(response, client, company)
         [ response[:infofactura],
-          items: response[:itemsFactura],
+          itemsFactura: response[:itemsFactura],
           url: response[:UrlFacturaPdf],
           client: client,
           company: company
         ].inject(&:merge)
       end
-
     end
 
     def initialize(client: nil, company: nil, customer: nil, **params)
@@ -75,15 +106,21 @@ module Colppy
       @company = company if company && company.is_a?(Colppy::Company)
       @customer = customer if customer && customer.is_a?(Colppy::Customer)
 
-      @id = params.delete(:idFactura)
-      @number = params.delete(:nroFactura)
+      @id = params.delete(:idFactura) || params.delete(:id)
+      @number = params.delete(:nroFactura) || params.delete(:number)
       @cae = params.delete(:cae)
 
-      @items = parse_items(params.delete(:items))
-      @payments = params.delete(:ItemsCobro) || []
+      @items = parse_items(params.delete(:itemsFactura))
+      @payments = parse_payments(params.delete(:ItemsCobro))
+      @taxes_totals = parse_taxes_totals(params.delete(:totalesiva))
 
-      @data = params
+      super(params)
       @url = build_pdf_url
+    end
+    DATA_KEYS_SETTERS.each do |data_key|
+      define_method("#{data_key}=") do |value|
+        @data[data_key.to_sym] = value
+      end
     end
 
     def new?
@@ -94,8 +131,20 @@ module Colppy
       cae.nil? || cae.empty?
     end
 
+    def []=(key, value)
+      ensure_editability!
+
+      super
+    end
+
+    def customer=(new_customer)
+      @customer = new_customer if new_customer.is_a?(Colppy::Customer)
+    end
+
     def save
-      ensure_editability! && ensure_client_valid! && ensure_company_valid! && ensure_customer_valid!
+      ensure_editability!
+      ensure_client_valid!
+      ensure_payment_setup!
 
       response = @client.call(
         :sell_invoice,
@@ -111,40 +160,53 @@ module Colppy
       end
     end
 
-    def []=(key, value)
-      ensure_editability!
-
-      key_sym = key.to_sym
-      if protected_data_keys.include?(key_sym)
-        raise ResourceError.new("You cannot change any of this values: #{protected_data_keys.join(", ")} manually")
-      end
-      @data[key_sym] = value
-    end
-
-    def items=(new_items)
-      @charged_details = nil
-      @items = parse_items(new_items)
-    end
-
     private
 
     def attr_inspect
       [:id, :number, :cae]
     end
 
-    def protected_data_keys
-      [:idFactura, :idEmpresa, :nroFactura]
+    def customer_id
+      return @customer.id if @customer
+
+      @data[:customer_id] || ""
     end
+    def company_id
+      return @company.id if @company
 
-    def parse_items(new_items)
-      return [] if new_items.nil? || new_items.empty?
-
-      new_items.map do |item|
-        item.tap do |hash|
-          if item[:idItem] && (item[:product].nil? || item[:product].empty?)
-            item[:product] = @company.product(item[:idItem])
-          end
-        end
+      @data[:company_id] || ""
+    end
+    def payment_condition_id
+      validate_type!(:payment_condition_id, VALID_PAYMENT_CONDITIONS)
+    end
+    def previous_status_id
+      if status = @data[:previous_status_id]
+        validate_type!(status, VALID_STATUS_ID)
+      else
+        ""
+      end
+    end
+    def status_id
+      validate_type!(:status_id, VALID_STATUS_ID)
+    end
+    def receipt_type_id
+      validate_type!(:receipt_type_id, VALID_RECEIPT_TYPES)
+    end
+    def invoice_type_id
+      validate_type!(:invoice_type_id, VALID_INVOICE_TYPES)
+    end
+    def invoice_type
+      if receipt_type_id == "8"
+        "Contado"
+      end
+    end
+    def validate_type!(data_key, valid_types)
+      type = @data[data_key]
+      if type && valid_types.include?(type)
+        type
+      else
+        raise DataError.new("The #{data_key} is invalid. The value should be any of this ones: #{valid_types.join(", ")}")
+        ""
       end
     end
 
@@ -155,137 +217,85 @@ module Colppy
     end
 
     def save_parameters
+      charged_amounts = calculate_charged_amounts
       [
         @client.session_params,
-        general_params,
-        invoice_payments_params,
-        itemsFactura: invoice_items_params,
-        totalesiva: total_taxes_params
+        general_params(charged_amounts),
+        itemsFactura: @items.map(&:save_parameters),
+        ItemsCobro: @payments.map(&:save_parameters),
+        totalesiva: @taxes_totals.map(&:save_parameters)
       ].inject(&:merge)
     end
 
-    def general_params
+    def general_params(charged_amounts)
       {
-        idCliente: @customer.id || @data[:idCliente] || "",
-        idEmpresa: @company.id,
+        idCliente: customer_id,
+        idEmpresa: company_id,
         descripcion: @data[:descripcion] || "",
         fechaFactura: valid_date(@data[:fechaFactura]),
-        idCondicionPago: @data[:idCondicionPago] || "Contado",
+        idCondicionPago: payment_condition_id,
         fechaPago: valid_date(@data[:fechaPago]),
-        idEstadoAnterior: @data[:idEstadoAnterior] || "",
-        idEstadoFactura: @data[:idEstadoFactura] || "Cobrada",
-        idFactura: id || "",
-        idMedioCobro: @data[:idMedioCobro] || "Efectivo",
-        idMoneda: @data[:idMoneda] || "1",
-        idTipoComprobante: receipt_type,
-        idTipoFactura: invoice_type,
-        netoGravado: (charged_details[:total_taxed] || 0.00).to_s,
-        netoNoGravado: (charged_details[:total_non_taxed] || 0.00).to_s,
-        nroFactura1: @data[:nroFactura1] || "0001",
-        nroFactura2: @data[:nroFactura2] || "",
-        percepcionIVA: (@data[:percepcionIVA] || 0.00).to_s,
-        percepcionIIBB: (@data[:percepcionIIBB] || 0.00).to_s,
-        totalFactura: (charged_details[:total] || 0.00).to_s,
-        totalIVA: (charged_details[:tax_total] || 0.00).to_s,
-        valorCambio: @data[:valorCambio] || "1",
+        idEstadoAnterior: previous_status_id,
+        idEstadoFactura: status_id,
+        idMoneda: @data[:currency_id] || "1",
+        idTipoComprobante: receipt_type_id,
+        idTipoFactura: invoice_type_id,
+        netoGravado: (charged_amounts[:total_taxed] || 0.00).to_s,
+        netoNoGravado: (charged_amounts[:total_non_taxed] || 0.00).to_s,
+        nroFactura1: @data[:invoice_number1] || "0001",
+        nroFactura2: @data[:invoice_number2] || "00000000",
+        percepcionIVA: (@data[:tax_perception] || 0.00).to_s,
+        percepcionIIBB: (@data[:iibb_perception] || 0.00).to_s,
+        totalFactura: (charged_amounts[:total] || 0.00).to_s,
+        totalIVA: (charged_amounts[:tax_total] || 0.00).to_s,
+        valorCambio: @data[:exchange_rate] || "1",
       }.tap do |params|
-        params[:labelfe] = "Factura Electrónica" if @data[:labelfe]
+        params[:idFactura] = @id if @id
+        params[:tipoFactura] = invoice_type if invoice_type
+        if status_id == "Cobrada"
+          params[:totalpagadofactura] = @payments.map(&:amount).inject(0,:+)
+        end
+        params[:labelfe] = "Factura Electrónica" if @data[:electronic_bill]
       end
     end
 
-    def invoice_items_params
-      items.map do |item|
-        if item[:product] && item[:product].is_a?(Colppy::Product)
-          product = item[:product]
-          [
-            product.params_for_invoice,
-            item_params(item, false)
-          ].inject(&:merge)
-        elsif item.is_a?(Hash)
-          item_params(item)
-        end
-      end
-    end
-
-    def item_params(item, fill_empty = true)
-      {
-        Cantidad: item[:Cantidad],
-        porcDesc: item[:porcDesc] || "0.00"
-      }.tap do |params|
-        if value = item[:ImporteUnitario] || fill_empty
-          params[:ImporteUnitario] = value || ""
-        end
-        if value = item[:idPlanCuenta] || fill_empty
-          params[:idPlanCuenta] = value || ""
-        end
-        if value = item[:IVA] || fill_empty
-          params[:IVA] = value || "21"
-        end
-        if value = item[:Comentario] || fill_empty
-          params[:Comentario] = value || ""
-        end
-      end
-    end
-
-    def invoice_payments_params
-      return {} unless payments
-      payment_items = payments.map do |payment|
-        {
-          idMedioCobro: payment[:idMedioCobro] || "Efectivo",
-          idPlanCuenta: payment[:idPlanCuenta] || "Caja en pesos",
-          Banco: payment[:Banco] || "",
-          nroCheque: payment[:nroCheque] || "",
-          fechaValidez: payment[:fechaValidez] || "",
-          importe: payment[:importe] || "0",
-          VAD: payment[:VAD] || "S"
-        }
-      end
-      { ItemsCobro: payment_items }
-    end
-
-    def total_taxes_params
-      charged_details[:tax_details].map do |tax, values|
-        {
-          alicuotaIva: tax.to_s,
-          baseImpIva: values[:total_taxed].to_s,
-          importeIva: values[:tax_total].to_s
-        }
-      end
-    end
-
-    def charged_details
-      return @charged_details unless @charged_details.nil? || @charged_details.empty?
-
-      if items.nil? || items.empty?
-        raise DataError.new("In order to save an SellInvoice you should at least have one item in it")
+    def calculate_charged_amounts
+      if @items.nil? || @items.empty?
+        raise DataError.new("In order to save an SellInvoice you should at least have one item in it. Add one with .add_item()")
       else
-        default_object = {
-          total_taxed: 0.00,
-          total_nontaxed: 0.00,
-          total: 0.00,
-          tax_total: 0.00,
-          tax_details:{}
-        }
-        @charged_details = items.each_with_object(default_object) do |item, result|
-          product_data = (item[:product] && item[:product].data) || {}
-          iva = (item[:IVA] || product_data[:iva] || 0).to_f
-          charged = (item[:ImporteUnitario] || product_data[:precioVenta] || 0).to_f
-          quantity = (item[:Cantidad] || 0).to_i
-          total = ( charged * quantity ).round(2)
-          if iva > 0
-            tax = (( total * iva ) / 100).round(2)
-            result[:tax_total] += tax
-            result[:total_taxed] += total - tax
-            result[:tax_details][iva] = {
-              tax_total: result[:tax_total],
-              total_taxed: result[:total_taxed]
-            }
+        charged_details = @items.each_with_object(base_charged_amounts) do |item, result|
+          tax = item.tax
+          total = item.total_charged
+          if tax > 0
+            item_tax_amount = (( total * tax ) / 100).round(2)
+            item_taxed_amount = total - item_tax_amount
+            result[:tax_total] += item_tax_amount
+            result[:total_taxed] += item_taxed_amount
+            tax_breakdown_data = TaxTotal.add_to_tax_breakdown(
+              tax,
+              item_tax_amount,
+              item_taxed_amount,
+              result[:tax_breakdown][tax]
+            )
+            result[:tax_breakdown][tax] = tax_breakdown_data
           else
             result[:total_nontaxed] += total
           end
           result[:total] += total
         end
+        @taxes_totals = parse_taxes_totals(charged_details[:tax_breakdown].values)
+        charged_details
       end
+    end
+
+    def base_charged_amounts
+      {
+        total_taxed: 0.00,
+        total_nontaxed: 0.00,
+        total: 0.00,
+        tax_total: 0.00,
+        tax_breakdown: {}
+      }
     end
 
     def ensure_editability!
@@ -294,50 +304,10 @@ module Colppy
       end
     end
 
-    def invoice_status
-      type = @data[:idEstadoFactura]
-      if type && VALID_INVOICE_STATUS.include?(type)
-        type
-      else
-        raise DataError.new("The value of idEstadoFactura:#{type} is invalid. The value should be any of this ones: #{VALID_INVOICE_STATUS.join(", ")}")
-      end
-    end
-
-    def invoice_type
-      type = @data[:idTipoFactura]
-      if type && VALID_INVOICE_TYPES.include?(type)
-        type
-      else
-        raise DataError.new("The idTipoFactura:#{type} is invalid. The value should be any of this ones: #{VALID_INVOICE_TYPES.join(", ")}")
-      end
-    end
-
-    def receipt_type
-      type = @data[:idTipoComprobante]
-      if type && VALID_RECEIPT_TYPES.include?(type)
-        type
-      else
-        raise DataError.new("The idTipoComprobante:#{type} is invalid. The value should be any of this ones: #{VALID_RECEIPT_TYPES.join(", ")}")
-        ""
+    def ensure_payment_setup!
+      if status_id == "Cobrada" && (@payments.nil? || @payments.empty?)
+        raise ResourceError.new("You cannot save this invoice, because it's doesn't have any payment associated to it and the status is #{@data[:status_id]}. Add one calling .add_payment({})")
       end
     end
   end
 end
-
-# "totalesiva":[
-#   {
-#     alicuotaIva: "0",
-#     baseImpIva: "0.00",
-#     importeIva: "0.00"
-#   },
-  # {
-  #   alicuotaIva: "21",
-  #   baseImpIva: "101.65",
-  #   importeIva: "21.35"
-  # },
-#   {
-#     alicuotaIva: "27",
-#     baseImpIva: "0.00",
-#     importeIva: "0.00"
-#   }
-# ]

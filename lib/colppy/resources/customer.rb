@@ -1,6 +1,36 @@
 module Colppy
   class Customer < Resource
-    attr_reader :id, :name, :data
+    attr_reader :id, :name
+
+    ATTRIBUTES_MAPPER = {
+      RazonSocial: :name,
+      NombreFantasia: :fantasy_name,
+      DirPostal: :address,
+      DirPostalCiudad: :address_city,
+      DirPostalCodigoPostal: :address_zipcode,
+      DirPostalProvincia: :address_state,
+      DirPostalPais: :address_country,
+      DirFiscal: :legal_address,
+      DirFiscalCiudad: :legal_address_city,
+      DirFiscalCodigoPostal: :legal_address_zipcode,
+      DirFiscalProvincia: :legal_address_state,
+      DirFiscalPais: :legal_address_country,
+      Telefono: :phone_number,
+      Fax: :fax_number,
+      Activo: :active,
+      idCondicionPago: :payment_condition_id,
+      idCondicionIva: :tax_condition_id,
+      CUIT: :cuit,
+      idTipoPercepcion: :tax_perception_id,
+      NroCuenta: :account_number,
+      CBU: :cbu,
+      Banco: :bank,
+      porcentajeIVA: :tax,
+      Email: :email,
+      Saldo: :balance
+    }.freeze
+    PROTECTED_DATA_KEYS = [:id, :company_id, :name].freeze
+    DATA_KEYS_SETTERS = (ATTRIBUTES_MAPPER.values - PROTECTED_DATA_KEYS).freeze
 
     class << self
       def all(client, company)
@@ -55,15 +85,20 @@ module Colppy
           }]
         }
       end
-
     end
 
     def initialize(client: nil, company: nil, **params)
       @client = client if client && client.is_a?(Colppy::Client)
       @company = company if company && company.is_a?(Colppy::Company)
-      @id = params.delete(:idCliente)
-      @name = params.delete(:RazonSocial)
-      @data = params
+
+      @id = params.delete(:idCliente) || params.delete(:id)
+      @name = params.delete(:RazonSocial) || params.delete(:name)
+      super(params)
+    end
+    DATA_KEYS_SETTERS.each do |data_key|
+      define_method("#{data_key}=") do |value|
+        @data[data_key.to_sym] = value
+      end
     end
 
     def new?
@@ -96,22 +131,10 @@ module Colppy
       @name = new_name
     end
 
-    def []=(key, value)
-      key_sym = key.to_sym
-      if protected_data_keys.include?(key_sym)
-        raise ResourceError.new("You cannot change any of this values: #{protected_data_keys.join(", ")} manually")
-      end
-      @data[key_sym] = value
-    end
-
     private
 
     def attr_inspect
       [:id, :name]
-    end
-
-    def protected_data_keys
-      [:idUsuario, :idCliente, :idEmpresa]
     end
 
     def operation

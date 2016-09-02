@@ -4,6 +4,7 @@ require 'multi_json'
 
 require "colppy/version"
 require "colppy/digest"
+require "colppy/utils"
 # CORE
 require "colppy/core/services"
 require "colppy/core/gateway"
@@ -11,6 +12,7 @@ require "colppy/core/gateway"
 require "colppy/resource"
 require "colppy/resources/customer"
 require "colppy/resources/company"
+require "colppy/resources/invoice"
 require "colppy/resources/product"
 require "colppy/resources/sell_invoice"
 require "colppy/resources/user"

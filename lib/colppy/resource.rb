@@ -1,6 +1,7 @@
 module Colppy
   class Resource
-    VALID_INVOICE_TYPES = %w(A B C E Z I M X)
+    attr_reader :data
+    include Utils
 
     class << self
       protected
@@ -28,11 +29,33 @@ module Colppy
       end
     end
 
+    def initialize(params)
+      @data = rename_params_hash(
+        params,
+        self.class::ATTRIBUTES_MAPPER,
+        self.class::DATA_KEYS_SETTERS
+      )
+    end
+
     def inspect
       formatted_attrs = attr_inspect.map do |attr|
         "#{attr}: #{send(attr).inspect}"
       end
       "#<#{self.class.name} #{formatted_attrs.join(", ")}>"
+    end
+
+    def []=(key, value)
+      key_sym = key.to_sym
+      if PROTECTED_DATA_KEYS.include?(key_sym)
+        raise ResourceError.new("You cannot change any of this values: #{PROTECTED_DATA_KEYS.join(", ")} manually")
+      end
+      if DATA_KEYS_SETTERS.include?[key]
+        @data[key_sym] = value
+      elsif new_key = ATTRIBUTES_MAPPER[key_sym]
+        @data[new_key] = value if DATA_KEYS_SETTERS.include?(new_key)
+      else
+        raise DataError.new("There is no attribute named :#{key_sym}, or you cannot change it manually this way. Try initializing another #{self.class.name} with that attribute as the argument")
+      end
     end
 
     private
@@ -78,6 +101,5 @@ module Colppy
         )
       end
     end
-
   end
 end

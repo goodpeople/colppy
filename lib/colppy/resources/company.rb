@@ -11,6 +11,13 @@ module Colppy
   class Company < Resource
     attr_reader :id, :name
 
+    ATTRIBUTES_MAPPER = {
+      idPlan: :plan_id,
+      activa: :active,
+      fechaVencimiento: :expiration_date
+    }.freeze
+    PROTECTED_DATA_KEYS = ATTRIBUTES_MAPPER.values
+
     class << self
       def all(client)
         list(client)
@@ -35,9 +42,10 @@ module Colppy
 
     def initialize(client: nil, **params)
       @client = client if client && client.is_a?(Colppy::Client)
-      @id = params.delete(:IdEmpresa)
-      @name = params.delete(:razonSocial)
-      @extras = params
+
+      @id = params.delete(:IdEmpresa) || params.delete(:id)
+      @name = params.delete(:razonSocial) || params.delete(:name)
+      super(params)
     end
 
     def customers(params = {})
@@ -67,12 +75,12 @@ module Colppy
     end
     alias :customer :customer_by_id
 
-    def product_by_sku(sku)
+    def product_by_code(code)
       ensure_client_valid!
 
       params = {
         filter: [
-          { field: "codigo", op: "=", value: sku }
+          { field: "codigo", op: "=", value: code }
         ]
       }
       response = Product.list(@client, self, params)
