@@ -3,8 +3,25 @@ module Colppy
     extend self
 
     def companies
-      @companies ||= Company.all(self)
+      return @companies if @companies
+      _companies = Company.all(self)
+      if _companies[:results]
+        @companies = _companies[:results]
+      else
+        _companies
+      end
     end
+
+    def company_by_id(id)
+      if @companies
+        @companies.detect do |company|
+          company.id == id
+        end
+      else
+        Company.get(self, id)
+      end
+    end
+    alias :company :company_by_id
 
   end
 
@@ -38,6 +55,20 @@ module Colppy
           response
         end
       end
+
+      def get(client, id)
+        response = client.call(
+          :company,
+          :read,
+          client.session_params.merge({ idEmpresa: id })
+        )
+        if response[:success]
+          new(response[:data].merge(client: client))
+        else
+          response
+        end
+      end
+
     end
 
     def initialize(client: nil, **params)
