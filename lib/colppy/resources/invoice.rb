@@ -99,6 +99,7 @@ module Colppy
       else
         @product = nil
       end
+      self
     end
 
     DATA_KEYS_SETTERS.each do |data_key|
@@ -127,7 +128,7 @@ module Colppy
     end
 
     def tax
-      (@data[:tax] || product.tax || 0).to_f
+      (@data[:tax] || product.tax || 21).to_f
     end
     def charged
       (unit_price || product.sell_price || 0).to_f
@@ -181,7 +182,9 @@ module Colppy
       }
     end
 
-    def inspect; end
+    def inspect
+      "#<#{self.class.name} product_id:#{@data[:product_id]} >"
+    end
   end
   class Invoice::Payment
     include Utils
