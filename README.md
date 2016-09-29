@@ -1,6 +1,6 @@
 # Colppy [![Build Status](https://travis-ci.org/goodpeople/colppy.svg?branch=master)](https://travis-ci.org/goodpeople/colppy)
 
-> **Still unstable version and prone to change here and there ;)**
+> **Stable version: Still missing the documentation in here and adding real tests cases :/**
 
 ## Installation
 
