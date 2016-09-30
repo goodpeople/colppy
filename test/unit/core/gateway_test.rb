@@ -16,18 +16,11 @@ class Colppy::Core::GatewayTest < Minitest::Test
   end
 
   def test_live_initialize
-    @gateway = Colppy::Core::Gateway.new("live")
+    @gateway = Colppy::Core::Gateway.new
+    @gateway.live!
 
     assert_equal false, @gateway.sandbox?
     assert_equal Colppy::Core::Gateway::PRODUCTION_API_URL, @gateway.send(:endpoint_url)
-  end
-
-  def test_live_initialize_change_to_sandbox
-    @gateway = Colppy::Core::Gateway.new("live")
-    @gateway.sandbox
-
-    assert_equal true, @gateway.sandbox?
-    assert_equal Colppy::Core::Gateway::SANDBOX_API_URL, @gateway.send(:endpoint_url)
   end
 
   def test_respond_to_call

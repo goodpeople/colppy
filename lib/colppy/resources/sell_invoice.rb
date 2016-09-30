@@ -238,7 +238,7 @@ module Colppy
         idCliente: customer_id,
         idEmpresa: company_id,
         idUsuario: @client.username,
-        descripcion: @data[:descripcion] || "",
+        descripcion: @data[:description] || "",
         fechaFactura: valid_date(@data[:invoice_date]),
         idCondicionPago: payment_condition_id,
         fechaPago: valid_date(@data[:payment_date]),
