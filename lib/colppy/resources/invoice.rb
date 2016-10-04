@@ -80,6 +80,7 @@ module Colppy
       Cantidad: :quantity, # required
       ImporteUnitario: :unit_price,
       IVA: :tax,
+      porcDesc: :discount_percentage,
       subtotal: :subtotal,
       idPlanCuenta: :sales_account_id,
       Comentario: :comment
@@ -131,7 +132,14 @@ module Colppy
       (@data[:tax] || product.tax || 21).to_f
     end
     def charged
-      (unit_price || product.sell_price || 0).to_f
+      if (percentage = discount_percentage.to_f) > 0
+        unit_price * ((100 - percentage) / 100)
+      else
+        unit_price
+      end
+    end
+    def unit_price
+      (@data[:unit_price] || product.sell_price || 0).to_f
     end
     def quantity
       @data[:quantity] || 0
@@ -173,8 +181,8 @@ module Colppy
         almacen: unhandle_data[:almacen] || "",
         unidadMedida: measure_unit,
         Cantidad: quantity,
-        ImporteUnitario: charged,
-        porcDesc: unhandle_data[:porcDesc] || 0,
+        ImporteUnitario: unit_price.round(2),
+        porcDesc: discount_percentage || 0,
         IVA: tax.to_s,
         subtotal: total_charged,
         idPlanCuenta: sales_account_id,

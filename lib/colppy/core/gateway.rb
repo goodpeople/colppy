@@ -1,8 +1,7 @@
 module Colppy
   module Core
     class Gateway
-      attr_reader :mode
-
+      MODES = %w(live sandbox).freeze
       MIME_JSON = "application/json".freeze
       SANDBOX_API_URL = "http://staging.colppy.com".freeze
       PRODUCTION_API_URL = "https://login.colppy.com".freeze
@@ -11,17 +10,17 @@ module Colppy
       def initialize(mode = "sandbox")
         @mode = mode
       end
+      MODES.each do |mode_name|
+        define_method("#{mode_name}!") do
+          @mode = mode_name
+        end
+        define_method("#{mode_name}?") do
+          @mode == mode_name
+        end
+      end
 
       def call(payload = {})
         make_request(payload)
-      end
-
-      def sandbox
-        @mode = "sandbox"
-      end
-
-      def sandbox?
-        @mode == "sandbox"
       end
 
       private

@@ -1,5 +1,6 @@
 module Colppy
   class Client
+    extend Forwardable
     include Digest
     SERVICES_MANIFEST = Core::SERVICES.freeze
 
@@ -14,6 +15,7 @@ module Colppy
         sign_in
       end
     end
+    def_delegators :@gateway, :live!, :live?, :sandbox!, :sandbox?
 
     def inspect
       formatted_attrs = attr_inspect.map do |attr|
