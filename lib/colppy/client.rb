@@ -4,12 +4,12 @@ module Colppy
     include Digest
     SERVICES_MANIFEST = Core::SERVICES.freeze
 
-    def initialize(auth_user, auth_pass, user)
+    def initialize(auth_user, auth_pass, user, mode = "sandbox")
       ensure_user_valid!(user)
 
       @auth_user = auth_user
       @auth_pass = md5(auth_pass)
-      @gateway = Core::Gateway.new
+      @gateway = Core::Gateway.new(mode)
       if user
         @user = user
         sign_in
