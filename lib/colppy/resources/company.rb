@@ -113,7 +113,9 @@ module Colppy
         ]
       }
       response = Product.list(@client, self, params)
-      response[:results].last
+      response = Product.list(@client, self, params)
+      return response[:results].last if response[:success]
+      nil
     end
     def product_by_id(id)
       ensure_client_valid!
