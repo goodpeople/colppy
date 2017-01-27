@@ -129,7 +129,8 @@ module Colppy
     end
 
     def tax
-      (@data[:tax] || product.tax || 21).to_f
+      tax = product.present? ? product.tax : nil
+      (@data[:tax] || tax || 21).to_f
     end
     def charged
       if (percentage = discount_percentage.to_f) > 0

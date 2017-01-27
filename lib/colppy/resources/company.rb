@@ -113,7 +113,6 @@ module Colppy
         ]
       }
       response = Product.list(@client, self, params)
-      response = Product.list(@client, self, params)
       return response[:results].last if response[:success]
       nil
     end
@@ -126,7 +125,8 @@ module Colppy
         ]
       }
       response = Product.list(@client, self, params)
-      response[:results].last
+      return response[:results].last if response[:success]
+      nil
     end
     alias :product :product_by_id
 
