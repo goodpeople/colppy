@@ -159,7 +159,7 @@ module Colppy
         RazonSocial: @name || "",
         CUIT: @data[:cuit] || "",
         dni: @data[:dni] || "",
-        DirPostal: @data[:address] || "",
+        DirPostal: @data[:address].truncate(59) || "",
         DirPostalCiudad: @data[:address_city] || "",
         DirPostalCodigoPostal: @data[:address_zipcode] || "",
         DirPostalProvincia: @data[:address_state] || "",
@@ -173,7 +173,7 @@ module Colppy
       {
         Activo: @data[:active] || "1",
         FechaAlta: @data[:FechaAlta] || "",
-        DirFiscal: @data[:legal_address] || "",
+        DirFiscal: @data[:legal_address].truncate(59) || "",
         DirFiscalCiudad: @data[:legal_address_city] || "",
         DirFiscalCodigoPostal: @data[:legal_address_zipcode] || "",
         DirFiscalProvincia: @data[:legal_address_state] || "",
