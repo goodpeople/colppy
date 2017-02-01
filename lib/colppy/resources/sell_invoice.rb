@@ -160,12 +160,14 @@ module Colppy
         :create,
         save_parameters
       )
-      if response[:success]
+
+      if response.present? && response[:success]
         @cae = response[:cae]
         @id = response[:idfactura]
         @number = response[:nroFactura]
         @data[:invoice_date] = response[:fechaFactura]
         @data[:url] = response[:UrlFacturaPdf]
+
         self
       else
         false

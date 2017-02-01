@@ -112,9 +112,12 @@ module Colppy
           { field: "codigo", op: "=", value: code }
         ]
       }
+
       response = Product.list(@client, self, params)
-      response[:results].last
+
+      response[:results].last if response.key?(:results)
     end
+
     def product_by_id(id)
       ensure_client_valid!
 
@@ -123,8 +126,10 @@ module Colppy
           { field: "idItem", op: "=", value: id }
         ]
       }
+
       response = Product.list(@client, self, params)
-      response[:results].last
+
+      response[:results].last if response.key?(:results)
     end
     alias :product :product_by_id
 
