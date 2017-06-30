@@ -149,7 +149,7 @@ module Colppy
         descripcion: @name || "",
         detalle: @data[:detail] || "",
         precioVenta: @data[:sell_price] || "0",
-        ultimoPrecioCompra: @data[:last_purchase_price] || "",
+        ultimoPrecioCompra: @data[:last_purchase_price] || "0",
         ctaInventario: check_mandatory_account!(:inventory_account),
         ctaCostoVentas: check_mandatory_account!(:sales_costs_account),
         ctaIngresoVentas: check_mandatory_account!(:sales_account),
