@@ -1,3 +1,5 @@
+require 'openssl'
+
 module Colppy
   module Digest
     module_function

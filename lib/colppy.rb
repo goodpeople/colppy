@@ -16,6 +16,7 @@ require "colppy/resources/invoice"
 require "colppy/resources/product"
 require "colppy/resources/sell_invoice"
 require "colppy/resources/user"
+require "colppy/resources/credit_note"
 # CLIENT
 require "colppy/errors"
 require "colppy/client"
