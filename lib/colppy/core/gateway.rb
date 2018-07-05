@@ -3,7 +3,7 @@ module Colppy
     class Gateway
       MODES = %w(live sandbox).freeze
       MIME_JSON = "application/json".freeze
-      SANDBOX_API_URL = "http://staging.colppy.com".freeze
+      SANDBOX_API_URL = "https://staging.colppy.com".freeze
       PRODUCTION_API_URL = "https://login.colppy.com".freeze
       API_PATH = "/lib/frontera2/service.php".freeze
 
