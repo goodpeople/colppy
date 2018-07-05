@@ -83,7 +83,9 @@ module Colppy
       porcDesc: :discount_percentage,
       subtotal: :subtotal,
       idPlanCuenta: :sales_account_id,
-      Comentario: :comment
+      Comentario: :comment,
+      ccosto1: :ccosto1,
+      ccosto2: :ccosto2
     }.freeze
     PROTECTED_DATA_KEYS = [:product_id].freeze
     DATA_KEYS_SETTERS = (ATTRIBUTES_MAPPER.values - PROTECTED_DATA_KEYS).freeze
@@ -169,6 +171,14 @@ module Colppy
       (@data[:comment] || "#{product.name}, #{product.detail}"  || "")
     end
 
+    def ccosto1
+      (@data[:ccosto1] || "")
+    end
+
+    def ccosto2
+      (@data[:ccosto2] || "")
+    end
+
     def save_parameters
       {
         idItem: product_id.to_s,
@@ -176,8 +186,8 @@ module Colppy
         tipoItem: item_type,
         codigo: code,
         Descripcion: name,
-        ccosto1: unhandle_data[:ccosto1] || "",
-        ccosto2: unhandle_data[:ccosto2] || "",
+        ccosto1: ccosto1 || "",
+        ccosto2: ccosto2 || "",
         almacen: unhandle_data[:almacen] || "",
         unidadMedida: measure_unit,
         Cantidad: quantity,
